@@ -45,11 +45,12 @@ class Icarus {
             this.download(this.optimization.url,  __dirname + '/tmp/' +  this.tempfilename,() => {
                 this.optimize(() => {
                     var filepath = __dirname + "/images/" + this.fullfilename;
+                    var fullfilename = this.fullfilename;
                     this.res.sendFile(filepath, this.options, function (err) {
                         if (err) {
                             this.next(err)
                         } else {
-                            console.log('Sent:', filepath)
+                            console.log('[Processed]: /images/', fullfilename)
                         }
                     })
                 })
@@ -69,7 +70,6 @@ class Icarus {
             progressive: true
         })
         .toFile(__dirname + '/images/' + this.fullfilename, (err, info) => {
-            console.log('optimized file') 
             if(err){
                 console.error('[ERROR]', err);
             }
@@ -82,11 +82,12 @@ class Icarus {
 
     sendCached(){
         var filepath = __dirname + "/images/" + this.fullfilename;
+        var fullfilename = this.fullfilename;
         this.res.sendFile(filepath, this.options, function (err) {
             if (err) {
                 this.next(err)
             } else {
-                console.log('Cache Hit :', filepath);
+                console.log('[Cache Hit]: /images/', fullfilename);
             }
         })
     }
@@ -107,4 +108,8 @@ class Icarus {
 
 app.use(express.static('images'))
 
-app.listen(1337, () => console.log(`Example app listening at http://localhost:${1337}`))
+app.listen(1337, () => console.log(
+`\nIcarus Image optimization
+--------------------------
+URL: http://localhost:1337/X/Y/EncodedImagePath
+`))
