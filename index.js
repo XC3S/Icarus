@@ -5,7 +5,9 @@ var fs = require('fs');
 
 var http = require('http');
 var https = require('https');
-var crypto = require('crypto')
+var crypto = require('crypto');
+
+const smartcrop = require('smartcrop-sharp');
 
 // respond with "hello world" when a GET request is made to the homepage
 app.get('/:x/:y/:url', function (req, res, next) {
@@ -43,17 +45,23 @@ class Icarus {
     process(){
         if(!fs.existsSync(__dirname + '/images/' + this.fullfilename)){
             this.download(this.optimization.url,  __dirname + '/tmp/' +  this.tempfilename,() => {
-                this.optimize(() => {
-                    var filepath = __dirname + "/images/" + this.fullfilename;
-                    var fullfilename = this.fullfilename;
-                    this.res.sendFile(filepath, this.options, function (err) {
-                        if (err) {
-                            this.next(err)
-                        } else {
-                            console.log('[Processed]: /images/', fullfilename)
-                        }
+                
+                smartcrop.crop(__dirname + '/tmp/' +  this.tempfilename, { width: this.optimization.x, height: this.optimization.y, options: {minScale: 1, ruleOfThirds: true} }).then((result) => {
+                    console.log('[smart crop]:', result);
+
+                    this.optimize(result.topCrop, () => {
+                        var filepath = __dirname + "/images/" + this.fullfilename;
+                        var fullfilename = this.fullfilename;
+                        this.res.sendFile(filepath, this.options, function (err) {
+                            if (err) {
+                                this.next(err)
+                            } else {
+                                console.log('[Processed]: /images/', fullfilename)
+                            }
+                        })
                     })
-                })
+                });
+                
             })
         }
         else {
@@ -61,8 +69,9 @@ class Icarus {
         }
     }
 
-    optimize(callback){
+    optimize(crop,callback){
         sharp( __dirname + '/tmp/' + this.tempfilename)
+        .extract({ width: crop.width, height: crop.height, left: crop.x, top: crop.y })
         .resize(this.optimization.x,this.optimization.y)
         .removeAlpha()
         .jpeg({ 
